@@ -27,21 +27,69 @@ const url = require('url');
 // console.log('will read file')
 
 //////////////////////////////
+const replaceTemplate = (temp, prod) => {
+  let output = temp
+  output = output.replace(/{%PRODUCTNAME%}/g, prod.productName);
+  output = output.replace(/{%PRICE%}/g, prod.price);
+  output = output.replace('(%PRODUCTNAME%)', prod.productName);
+  output = output.replace('(%IMAGE%)', prod.image);
+  output = output.replace('(%PRICE%)', prod.price);
+  output = output.replace('(%ORIGIN%)', prod.from);
+  output = output.replace('(%DESCRIPTION%)', prod.description);
+  output = output.replace('(%QUANTITY%)', prod.quantity);
+  output = output.replace('(%ID%)', prod.id);
+  output = output.replace('(%NUTRIENTS%)', prod.nutrients)
+  if (!prod.organic) {
+    output = output.replace('(%NOT_ORGANIC%)', 'not-organic');
+  }
+  return output;
+};
+const tempOverview = fs.readFileSync(`starter/templates/template-overview.html`, 'utf-8');
+const tempCard = fs.readFileSync(`starter/templates/template-card.html`, 'utf-8');
+const tempProduct = fs.readFileSync(`starter/templates/template-product.html`, 'utf-8');
+//Can't use the sync method within the server as this would cause blocking
+
 const data = fs.readFileSync(`starter/dev-data/data.json`, 'utf-8');
-const productD = JSON.parse(data);
+const dataObj = JSON.parse(data);
 //SERVER: 
 const server = http.createServer((req, res) => {
-  console.log(req.url);
-  const pathname = req.url;
+  // PRACTICE
+  // console.log(req.url);
+  // console.log(url.parse(req.url, true));
+  // Pracitce
+  const { query, pathname } = url.parse(req.url, true);
+  // const pathname = req.url;
+  //Overview Page
   if (pathname === '/' || pathname === '/overview') {
-    res.end('This is the OVERVIEW');
+    res.writeHead(200, { 'Content-type': 'text/html' });
+    console.log(query);
 
+
+    const cardsHTML = dataObj.map(el => replaceTemplate(tempCard, el)).join('');
+    const output = tempOverview.replace('(%PRODUCT_CARDS%)', cardsHTML);
+    res.end(output);
+    //Product Page
   } else if (pathname === '/product') {
-    res.end('This is the PRODUCT');
+    res.writeHead(200, { 'Content-type': 'text/html' });
+    const prod = dataObj[query.id];
+    const output = replaceTemplate(tempProduct, prod)
+
+
+
+
+
+    res.end(output);
+    //API Page
   } else if (pathname === '/api') {
+
+
+
+
+
     res.writeHead(200, { 'Content-type': 'application/json' });
     res.end(data);
   }
+  //NotFound
   else {
     res.writeHead(404, {
       'Content-type': 'text/html',
